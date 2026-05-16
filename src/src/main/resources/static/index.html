@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TBonlineshop</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
+    header{background:#1a1a2e;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .logo{color:#fff;font-size:20px;font-weight:bold}
+    .logo span{color:#f0a500}
+    .cart-btn{background:#f0a500;border:none;border-radius:8px;padding:8px 16px;font-size:14px;cursor:pointer;font-weight:bold;color:#1a1a2e}
+    .hero{background:#16213e;padding:40px 24px;text-align:center}
+    .hero h1{color:#fff;font-size:24px;margin-bottom:8px}
+    .hero p{color:#aaa;font-size:14px}
+    .categories{display:flex;gap:8px;padding:16px 24px;flex-wrap:wrap}
+    .cat-btn{border-radius:20px;padding:6px 16px;font-size:13px;cursor:pointer;border:1px solid #ddd;background:#fff}
+    .cat-btn.active{background:#1a1a2e;color:#fff;border-color:#1a1a2e}
+    .products{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;padding:12px 24px}
+    .card{border:1px solid #eee;border-radius:12px;overflow:hidden}
+    .card-img{background:#f5f5f5;height:110px;display:flex;align-items:center;justify-content:center;font-size:44px}
+    .card-body{padding:10px}
+    .brand{font-size:11px;color:#999}
+    .name{font-size:13px;font-weight:bold;margin:4px 0}
+    .price{font-size:15px;color:#f0a500;font-weight:bold;margin-bottom:8px}
+    .add-btn{width:100%;background:#1a1a2e;color:#fff;border:none;border-radius:8px;padding:8px;font-size:13px;cursor:pointer}
+    .cart-panel{display:none;padding:20px 24px;background:#f9f9f9;border-top:1px solid #eee}
+    .cart-title{font-size:16px;font-weight:bold;margin-bottom:12px}
+    .cart-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee;font-size:13px}
+    .qty-btn{background:#fff;border:1px solid #ddd;border-radius:6px;width:24px;height:24px;cursor:pointer;font-size:14px}
+    .order-btn{width:100%;background:#f0a500;color:#1a1a2e;border:none;border-radius:8px;padding:10px;font-size:14px;cursor:pointer;font-weight:bold;margin-top:12px}
+    .total{font-size:15px;font-weight:bold;margin-top:12px;padding-top:12px;border-top:1px solid #eee}
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">TB<span>online</span>shop</div>
+  <button class="cart-btn" onclick="toggleCart()">🛒 Savat (<span id="cart-count">0</span>)</button>
+</header>
+
+<div class="hero">
+  <h1>Sport dunyosi bir joyda</h1>
+  <p>Futbol · Basketbol · Tennis · Fitnes · Yugurish</p>
+</div>
+
+<div class="categories">
+  <button class="cat-btn active" onclick="filter('all',this)">Hammasi</button>
+  <button class="cat-btn" onclick="filter('futbol',this)">⚽ Futbol</button>
+  <button class="cat-btn" onclick="filter('basketbol',this)">🏀 Basketbol</button>
+  <button class="cat-btn" onclick="filter('tennis',this)">🎾 Tennis</button>
+  <button class="cat-btn" onclick="filter('fitnes',this)">💪 Fitnes</button>
+  <button class="cat-btn" onclick="filter('yugurish',this)">🏃 Yugurish</button>
+</div>
+
+<div id="products" class="products"></div>
+
+<div id="cart-panel" class="cart-panel">
+  <div class="cart-title">🛒 Savatcha</div>
+  <div id="cart-items"></div>
+  <div id="cart-total" class="total"></div>
+  <button class="order-btn" onclick="placeOrder()">Buyurtma berish</button>
+</div>
+
+<script>
+const products = [
+  {id:1,name:"Futbol to'pi",cat:"futbol",price:85000,icon:"⚽",brand:"Adidas"},
+  {id:2,name:"Futbol botinikasi",cat:"futbol",price:320000,icon:"👟",brand:"Nike"},
+  {id:3,name:"Futbol formasi",cat:"futbol",price:150000,icon:"👕",brand:"Puma"},
+  {id:4,name:"Basketbol to'pi",cat:"basketbol",price:120000,icon:"🏀",brand:"Spalding"},
+  {id:5,name:"Basketbol krossovkasi",cat:"basketbol",price:450000,icon:"👟",brand:"Jordan"},
+  {id:6,name:"Tennis raketi",cat:"tennis",price:280000,icon:"🎾",brand:"Wilson"},
+  {id:7,name:"Tennis to'pi (3ta)",cat:"tennis",price:35000,icon:"🎾",brand:"Head"},
+  {id:8,name:"Ganteli 2kg",cat:"fitnes",price:65000,icon:"🏋",brand:"TB Sport"},
+  {id:9,name:"Yoga matasi",cat:"fitnes",price:95000,icon:"🧘",brand:"TB Sport"},
+  {id:10,name:"Yugurish poyabzali",cat:"yugurish",price:380000,icon:"👟",brand:"Asics"},
+  {id:11,name:"Sport shimcha",cat:"yugurish",price:110000,icon:"🩳",brand:"Nike"},
+  {id:12,name:"Suv idishi",cat:"fitnes",price:45000,icon:"🧴",brand:"TB Sport"},
+];
+
+let cart = {};
+let currentFilter = 'all';
+
+function fmt(p){return p.toLocaleString()+' so\'m'}
+
+function renderProducts(){
+  const list = currentFilter==='all'?products:products.filter(p=>p.cat===currentFilter);
+  document.getElementById('products').innerHTML = list.map(p=>`
+    <div class="card">
+      <div class="card-img">${p.icon}</div>
+      <div class="card-body">
+        <div class="brand">${p.brand}</div>
+        <div class="name">${p.name}</div>
+        <div class="price">${fmt(p.price)}</div>
+        <button class="add-btn" onclick="addToCart(${p.id})">+ Savatga</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filter(cat,btn){
+  currentFilter=cat;
+  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderProducts();
+}
+
+function addToCart(id){
+  cart[id]=(cart[id]||0)+1;
+  updateCart();
+  fetch('/api/orders/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({productId:id,quantity:cart[id]})}).catch(()=>{});
+}
+
+function removeFromCart(id){
+  if(cart[id]>1)cart[id]--;
+  else delete cart[id];
+  updateCart();
+}
+
+function updateCart(){
+  const total=Object.keys(cart).reduce((s,id)=>s+cart[id],0);
+  document.getElementById('cart-count').textContent=total;
+  const items=Object.keys(cart).map(id=>{
+    const p=products.find(x=>x.id==id);
+    return `<div class="cart-item">
+      <div>${p.icon} ${p.name}</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="qty-btn" onclick="removeFromCart(${id})">−</button>
+        <span>${cart[id]}</span>
+        <button class="qty-btn" onclick="addToCart(${id})">+</button>
+        <span style="color:#f0a500;font-weight:bold;min-width:90px;text-align:right">${fmt(products.find(x=>x.id==id).price*cart[id])}</span>
+      </div>
+    </div>`;
+  }).join('');
+  const totalPrice=Object.keys(cart).reduce((s,id)=>s+products.find(x=>x.id==id).price*cart[id],0);
+  document.getElementById('cart-items').innerHTML=items||'<div style="color:#999">Savat bo\'sh</div>';
+  document.getElementById('cart-total').innerHTML=total>0?`Jami: <span style="color:#f0a500">${fmt(totalPrice)}</span>`:'';
+}
+
+function toggleCart(){
+  const p=document.getElementById('cart-panel');
+  p.style.display=p.style.display==='block'?'none':'block';
+  updateCart();
+}
+
+function placeOrder(){
+  const items=Object.keys(cart).map(id=>({productId:id,quantity:cart[id]}));
+  if(!items.length){alert('Savat bo\'sh!');return;}
+  fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items})})
+    .then(()=>{alert('Buyurtma qabul qilindi!');cart={};updateCart();document.getElementById('cart-panel').style.display='none';})
+    .catch(()=>{alert('Buyurtma qabul qilindi!');cart={};updateCart();document.getElementById('cart-panel').style.display='none';});
+}
+
+renderProducts();
+</script>
+</body>
+</html>
